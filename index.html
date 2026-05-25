@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Private Health Dashboard — thehealthybuck.com</title>
+<style>
+:root{
+  --primary:#059669;
+  --teal:#0f766e;
+  --aqua:#67b7ff;
+  --mint:#80e3c2;
+  --ink:#0f172a;
+  --muted:#475569;
+  --glass-border:rgba(255,255,255,.24);
+}
+
+*{box-sizing:border-box}
+
+html{scroll-behavior:smooth}
+
+body{
+  margin:0;
+  min-height:100vh;
+  padding:10px;
+  font-family:"Segoe UI","Helvetica Neue",system-ui,-apple-system,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at top left,rgba(128,227,194,.35),transparent 34%),
+    radial-gradient(circle at top right,rgba(103,183,255,.28),transparent 36%),
+    linear-gradient(135deg,rgba(240,253,250,.72),rgba(224,242,254,.72));
+}
+
+/* Matches Carrd expandable tool panel style */
+.tool-card{
+  position:relative;
+  margin:0 auto 24px;
+  max-width:min(980px,92vw);
+  border-radius:18px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 14px 36px rgba(0,0,0,.24);
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+  overflow:hidden;
+  scroll-margin-top:80px;
+}
+
+.tool-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 12px 0 12px;
+  position:relative;
+}
+
+.pill{
+  border-radius:999px;
+  padding:10px 14px;
+  cursor:pointer;
+  user-select:none;
+  border:1px solid rgba(255,255,255,.35);
+  background:linear-gradient(135deg,rgba(0,0,0,.35),rgba(0,0,0,.25));
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+  color:#fff;
+  font-weight:700;
+  letter-spacing:.2px;
+  box-shadow:0 10px 26px rgba(0,0,0,.3);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  position:relative;
+  flex:1;
+}
+
+.pill-title{
+  font-weight:700;
+  font-size:1.05rem;
+  letter-spacing:.3px;
+  background:linear-gradient(90deg,#f9fafb,#dbeafe,#e0f2fe);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  text-fill-color:transparent;
+  white-space:nowrap;
+}
+
+.tool-toggle + .tool-head .pill::after{
+  content:"+";
+  margin-left:auto;
+  font-family:system-ui,sans-serif;
+  font-weight:900;
+  line-height:1;
+  font-size:1.1rem;
+  display:inline-block;
+  transform:translateY(1px);
+  background:linear-gradient(90deg,#f9fafb,#dbeafe,#e0f2fe);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.tool-toggle:checked + .tool-head .pill::after{content:"−"}
+
+.back-btn{
+  margin-left:auto;
+  text-decoration:none;
+  font-weight:700;
+  color:#fff;
+  padding:10px 14px;
+  border-radius:12px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(255,255,255,.35);
+  background:linear-gradient(135deg,rgba(0,0,0,.35),rgba(0,0,0,.25));
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+  box-shadow:0 10px 26px rgba(0,0,0,.3);
+  transition:transform .2s ease;
+}
+
+.back-btn:hover{transform:translateY(-1px)}
+
+.tool-toggle{
+  position:absolute;
+  inset:auto;
+  width:1px;
+  height:1px;
+  opacity:0;
+}
+
+.tool-body{
+  max-height:0;
+  opacity:0;
+  transform:translateY(-6px);
+  overflow:hidden;
+  transition:max-height .5s ease,opacity .35s ease,transform .35s ease,padding .35s ease;
+  padding:0 12px 0 12px;
+}
+
+.tool-toggle:checked ~ .tool-body{
+  max-height:4000px;
+  opacity:1;
+  transform:translateY(0);
+  padding:12px;
+}
+
+.dashboard-wrap{
+  border-radius:16px;
+  overflow:hidden;
+  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
+  border:1px solid rgba(255,255,255,.24);
+  box-shadow:0 10px 26px rgba(0,0,0,.20);
+  padding:14px;
+}
+
+.hero{
+  padding:18px;
+  border-radius:16px;
+  background:linear-gradient(135deg,rgba(255,255,255,.38),rgba(255,255,255,.18));
+  border:1px solid rgba(255,255,255,.24);
+  margin-bottom:14px;
+}
+
+.hero-badge{
+  display:inline-block;
+  margin-bottom:10px;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:.82rem;
+  font-weight:800;
+  letter-spacing:.3px;
+  color:#0f4f4f;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.24);
+}
+
+.hero h2{
+  margin:0 0 8px;
+  color:#134e4a;
+  font-size:1.45rem;
+  line-height:1.15;
+  text-shadow:0 2px 10px rgba(0,0,0,.12);
+}
+
+.hero p{
+  margin:0;
+  color:#0f4f4f;
+  font-size:.96rem;
+  line-height:1.5;
+}
+
+.status-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.status-card,
+.export-card,
+.tool-summary,
+.goal-card{
+  border-radius:16px;
+  padding:14px;
+  background:linear-gradient(135deg,rgba(255,255,255,.52),rgba(255,255,255,.28));
+  border:1px solid rgba(255,255,255,.25);
+  box-shadow:0 10px 22px rgba(0,0,0,.12);
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+}
+
+.kicker{
+  font-size:.72rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:#0f4f4f;
+  font-weight:900;
+  margin-bottom:4px;
+}
+
+.big{
+  color:#134e4a;
+  font-weight:900;
+  font-size:1.05rem;
+  line-height:1.25;
+  text-shadow:none;
+}
+
+.small{
+  color:#0f4f4f;
+  font-size:.88rem;
+  line-height:1.42;
+}
+
+.section-title{
+  color:#134e4a;
+  font-size:1.05rem;
+  font-weight:900;
+  margin:16px 2px 8px;
+  text-shadow:0 2px 10px rgba(0,0,0,.12);
+}
+
+.tool-list{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.tool-summary strong,
+.goal-card strong{
+  color:#134e4a;
+  display:block;
+  margin-bottom:4px;
+  text-shadow:none;
+}
+
+.export-card textarea{
+  width:100%;
+  min-height:110px;
+  margin:10px 0;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.24);
+  color:#0f172a;
+  font:inherit;
+  resize:vertical;
+  outline:none;
+}
+
+.checks{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:8px 0 4px;
+}
+
+.checks label{
+  color:#0f4f4f;
+  font-weight:700;
+  font-size:.9rem;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  min-height:48px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 18px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.34);
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+  text-decoration:none;
+  background-image:
+    linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.07)),
+    linear-gradient(135deg,#80e3c2,#67b7ff,#7ea9ff);
+  background-size:100% 100%,220% 220%;
+  box-shadow:0 12px 30px rgba(0,0,0,.20);
+}
+
+.btn.secondary{
+  background-image:
+    linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.08)),
+    linear-gradient(135deg,#6bd0b2,#49b0d7,#6598df);
+}
+
+.empty{
+  color:#0f4f4f;
+  padding:12px;
+  border-radius:14px;
+  background:rgba(255,255,255,.16);
+  border:1px dashed rgba(255,255,255,.30);
+}
+
+.disclaimer{
+  margin-top:10px;
+  color:#0f4f4f;
+  font-size:.78rem;
+  line-height:1.4;
+}
+
+@media(max-width:768px){
+  body{padding:0}
+  .tool-head{flex-wrap:wrap}
+  .back-btn{margin-left:0}
+  .tool-card{max-width:100vw;margin-left:0;margin-right:0;border-radius:16px}
+  .status-grid,.tool-list,.checks{grid-template-columns:1fr}
+  .pill{width:100%}
+}
+</style>
+</head>
+
+<body>
+<section id="private-dashboard" class="tool-card" aria-label="Private Health Dashboard">
+<input type="checkbox" id="toggle-private-dashboard" class="tool-toggle" checked>
+
+<header class="tool-head">
+<label class="pill" for="toggle-private-dashboard">
+<span class="pill-title">Private Health Dashboard</span>
+</label>
+
+<a class="back-btn" href="#hub" aria-label="Back to hub">
+<svg class="home-ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+<path d="M12 3l9 8h-3v8h-5v-5H11v5H6v-8H3l9-8z" fill="currentColor"/>
+</svg>
+<span>Home</span>
+</a>
+</header>
+
+<div class="tool-body">
+<div class="dashboard-wrap">
+  <div class="hero">
+    <div class="hero-badge">Private Local Snapshot</div>
+    <h2>Your progress, saved on this device</h2>
+    <p>This dashboard reads your tool activity locally in this browser. Nothing is uploaded unless you choose to export a report.</p>
+  </div>
+
+  <div class="status-grid">
+    <div class="status-card">
+      <div class="kicker">Current Phase</div>
+      <div class="big" id="dash-phase">Getting Started</div>
+    </div>
+    <div class="status-card">
+      <div class="kicker">Next Step</div>
+      <div class="big" id="dash-next">Save an entry from one of your tools.</div>
+    </div>
+    <div class="status-card">
+      <div class="kicker">Last Updated</div>
+      <div class="big" id="dash-updated">Not yet saved</div>
+    </div>
+  </div>
+
+  <div class="section-title">Active Goals</div>
+  <div id="dash-goals"></div>
+
+  <div class="section-title">Tool Activity</div>
+  <div class="tool-list" id="dash-tools"></div>
+
+  <div class="section-title">Export for PCP / NP</div>
+  <div class="export-card">
+    <div class="small">Choose what to include, add notes, then export. Your browser will open a printable report you can save as PDF.</div>
+
+    <div class="checks">
+      <label><input type="checkbox" class="export-tool" value="smart_health_calculator" checked> Modern Health</label>
+      <label><input type="checkbox" class="export-tool" value="wellness_journal" checked> Sleep & Breathing</label>
+      <label><input type="checkbox" class="export-tool" value="diabetes_hypertension_companion" checked> Glucose Circulation</label>
+      <label><input type="checkbox" class="export-tool" value="transformation_tracker" checked> Track Your Progress</label>
+      <label><input type="checkbox" id="export-goals" checked> Active Goals</label>
+      <label><input type="checkbox" id="export-snapshots" checked> Last 3 Snapshots</label>
+    </div>
+
+    <textarea id="export-notes" placeholder="Optional notes for your health professional..."></textarea>
+
+    <div class="actions">
+      <button class="btn" onclick="downloadHBPIReportPDF()">Export PDF</button>
+      <button class="btn secondary" onclick="refreshDashboard()">Refresh</button>
+    </div>
+
+    <div class="disclaimer">For personal tracking and appointment preparation only. This does not diagnose, treat, cure, or prevent disease.</div>
+  </div>
+</div>
+</div>
+</section>
+
+<script>
+(function(){
+  const STORAGE_KEY = "hbpi_user_state_v1";
+
+  function defaultState(){
+    return {
+      tools:{},
+      events:[],
+      activeGoals:[],
+      status:{
+        currentPhase:"Getting Started",
+        nextStep:"Save an entry from one of your tools.",
+        lastUpdated:null
+      },
+      snapshots:[]
+    };
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      return Object.assign(defaultState(), JSON.parse(raw));
+    }catch(e){
+      return defaultState();
+    }
+  }
+
+  function saveState(state){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function readableToolName(toolName){
+    const names = {
+      smart_health_calculator:"Modern Health",
+      wellness_journal:"Sleep & Breathing",
+      diabetes_hypertension_companion:"Glucose Circulation",
+      transformation_tracker:"Track Your Progress"
+    };
+    return names[toolName] || String(toolName || "").replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase());
+  }
+
+  function escapeHTML(value){
+    return String(value ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function formatDate(value){
+    if(!value) return "Not yet saved";
+    try{return new Date(value).toLocaleString();}
+    catch(e){return String(value);}
+  }
+
+  function summarizeTool(toolName, toolData){
+    const current = toolData && toolData.current ? toolData.current : {};
+    if(toolName === "smart_health_calculator"){
+      return current.currentTab ? `Latest tab: ${current.currentTab}` : "No saved calculator update yet.";
+    }
+    if(toolName === "wellness_journal"){
+      return current.latestEntry ? `Last entry: ${current.latestEntry.title || "Journal entry"}` : "No journal entry yet.";
+    }
+    if(toolName === "diabetes_hypertension_companion"){
+      if(current.latestTracker) return `Latest reading: ${current.latestTracker.glucose || "—"} glucose / ${current.latestTracker.systolic || "—"}/${current.latestTracker.diastolic || "—"} BP`;
+      if(current.latestEntry) return `Last entry: ${current.latestEntry.notes || "Journal entry"}`;
+      return "No glucose or blood pressure update yet.";
+    }
+    if(toolName === "transformation_tracker"){
+      if(current.today) return `Today: ${current.today.percentOfPotential || 0}% of potential`;
+      if(current.summary) return "Summary saved.";
+      return "No transformation update yet.";
+    }
+    return current.label || "Saved locally.";
+  }
+
+  function refreshDashboard(){
+    const state = loadState();
+
+    document.getElementById("dash-phase").textContent = state.status?.currentPhase || "Getting Started";
+    document.getElementById("dash-next").textContent = state.status?.nextStep || "Save an entry from one of your tools.";
+    document.getElementById("dash-updated").textContent = formatDate(state.status?.lastUpdated);
+
+    const goals = (state.activeGoals || []).filter(g => g.status !== "complete");
+    document.getElementById("dash-goals").innerHTML = goals.length
+      ? goals.map(goal => `
+        <div class="goal-card">
+          <strong>${escapeHTML(goal.goal || "Active goal")}</strong>
+          <div class="small">Source: ${escapeHTML(goal.source || "Tool update")}</div>
+        </div>
+      `).join("")
+      : `<div class="empty">No active goals yet. Save a tool entry to begin.</div>`;
+
+    const expectedTools = [
+      "smart_health_calculator",
+      "wellness_journal",
+      "diabetes_hypertension_companion",
+      "transformation_tracker"
+    ];
+
+    document.getElementById("dash-tools").innerHTML = expectedTools.map(toolName => {
+      const toolData = state.tools?.[toolName];
+      return `
+        <div class="tool-summary">
+          <strong>${escapeHTML(readableToolName(toolName))}</strong>
+          <div class="small">${escapeHTML(toolData ? summarizeTool(toolName, toolData) : "Waiting for first save.")}</div>
+          <div class="small">${toolData?.lastUpdated ? "Updated: " + escapeHTML(formatDate(toolData.lastUpdated)) : ""}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function exportSelectedData(opts){
+    const state = loadState();
+    const selectedTools = {};
+    (opts.includeTools || []).forEach(toolName => {
+      if(state.tools && state.tools[toolName]) selectedTools[toolName] = state.tools[toolName];
+    });
+
+    return {
+      exportedAt:new Date().toISOString(),
+      notes:opts.notes || "",
+      status:state.status || {},
+      activeGoals:opts.includeGoals ? (state.activeGoals || []) : [],
+      tools:selectedTools,
+      snapshots:opts.includeSnapshots ? (state.snapshots || []).slice(0,3) : []
+    };
+  }
+
+  function buildReportHTML(data){
+    return `
+      <!doctype html>
+      <html>
+      <head>
+        <title>Healthy Buck Progress Export</title>
+        <style>
+          body{font-family:Arial,sans-serif;color:#111827;padding:32px;line-height:1.45}
+          h1,h2,h3{color:#0f766e}
+          .section{border-top:1px solid #e5e7eb;padding-top:16px;margin-top:20px}
+          .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin:8px 0}
+          pre{white-space:pre-wrap;word-break:break-word;font-family:Arial,sans-serif}
+          .note{font-size:12px;color:#6b7280}
+        </style>
+      </head>
+      <body>
+        <h1>Healthy Buck Progress Export</h1>
+        <p class="note">Generated locally from the user's browser. No cloud sync or API required.</p>
+        <p><strong>Exported:</strong> ${formatDate(data.exportedAt)}</p>
+
+        <div class="section">
+          <h2>Current Status</h2>
+          <p><strong>Current phase:</strong> ${escapeHTML(data.status.currentPhase || "")}</p>
+          <p><strong>Next step:</strong> ${escapeHTML(data.status.nextStep || "")}</p>
+          <p><strong>Last updated:</strong> ${escapeHTML(formatDate(data.status.lastUpdated))}</p>
+        </div>
+
+        ${data.notes ? `
+          <div class="section">
+            <h2>User Notes</h2>
+            <pre>${escapeHTML(data.notes)}</pre>
+          </div>
+        ` : ""}
+
+        <div class="section">
+          <h2>Active Goals</h2>
+          ${data.activeGoals.length ? data.activeGoals.map(goal => `
+            <div class="box">
+              <strong>${escapeHTML(goal.goal || "Active goal")}</strong><br>
+              Source: ${escapeHTML(goal.source || "Tool update")}<br>
+              Status: ${escapeHTML(goal.status || "active")}
+            </div>
+          `).join("") : "<p>No active goals exported.</p>"}
+        </div>
+
+        <div class="section">
+          <h2>Selected Tool Data</h2>
+          ${Object.keys(data.tools).length ? Object.entries(data.tools).map(([toolName, toolData]) => `
+            <div class="box">
+              <h3>${escapeHTML(readableToolName(toolName))}</h3>
+              <pre>${escapeHTML(JSON.stringify(toolData.current || toolData, null, 2))}</pre>
+            </div>
+          `).join("") : "<p>No tool data selected.</p>"}
+        </div>
+
+        <div class="section">
+          <h2>Last 3 Local Snapshots</h2>
+          ${data.snapshots.length ? data.snapshots.map(snapshot => `
+            <div class="box">
+              <strong>${escapeHTML(formatDate(snapshot.date))}</strong><br>
+              Tool: ${escapeHTML(readableToolName(snapshot.tool))}
+              <pre>${escapeHTML(JSON.stringify(snapshot.status, null, 2))}</pre>
+            </div>
+          `).join("") : "<p>No snapshots exported.</p>"}
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  window.downloadHBPIReportPDF = function(){
+    const includeTools = Array.from(document.querySelectorAll(".export-tool:checked")).map(input => input.value);
+    const includeGoals = document.getElementById("export-goals")?.checked ?? true;
+    const includeSnapshots = document.getElementById("export-snapshots")?.checked ?? true;
+    const notes = document.getElementById("export-notes")?.value || "";
+
+    const data = exportSelectedData({includeTools, includeGoals, includeSnapshots, notes});
+    const html = buildReportHTML(data);
+    const reportWindow = window.open("", "_blank");
+    if(!reportWindow){
+      alert("Please allow popups to export the PDF.");
+      return;
+    }
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    reportWindow.focus();
+    reportWindow.print();
+  };
+
+  window.refreshDashboard = refreshDashboard;
+
+  window.addEventListener("message", function(event){
+    if(event.data?.source === "HBPIState" && event.data?.type === "hbpi_state_updated"){
+      try{ saveState(event.data.state); }catch(e){}
+      refreshDashboard();
+    }
+  });
+
+  window.addEventListener("storage", function(event){
+    if(event.key === STORAGE_KEY) refreshDashboard();
+  });
+
+  document.addEventListener("DOMContentLoaded", refreshDashboard);
+})();
+</script>
+</body>
+</html>
