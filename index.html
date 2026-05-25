@@ -544,37 +544,112 @@ body{
     };
   }
 
+  function formatLabel(key = "") {
+    return String(key)
+      .replace(/_/g, " ")
+      .replace(/([A-Z])/g, " $1")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/^./, c => c.toUpperCase());
+  }
+
+  function formatMemberValue(value) {
+    if(value == null || value === "") return "Not recorded yet";
+    if(Array.isArray(value)) return value.filter(Boolean).join(", ");
+    if(typeof value === "object") {
+      return Object.entries(value)
+        .filter(([_, v]) => v != null && v !== "")
+        .map(([k, v]) => `${formatLabel(k)}: ${String(v)}`)
+        .join(" • ");
+    }
+    return String(value);
+  }
+
+  function renderFriendlyToolData(toolName, toolData = {}) {
+    const current = toolData.current || toolData;
+    const rows = Object.entries(current)
+      .filter(([_, value]) => value != null && value !== "")
+      .slice(0, 8);
+
+    if(!rows.length) return "<p>No recent activity recorded for this tool.</p>";
+
+    return `
+      <div class="friendly-data">
+        ${rows.map(([key, value]) => `
+          <div class="friendly-row">
+            <strong>${escapeHTML(formatLabel(key))}:</strong>
+            <span>${escapeHTML(formatMemberValue(value))}</span>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderProgressSnapshot(snapshot = {}) {
+    const summary =
+      snapshot.summary ||
+      snapshot.status?.summary ||
+      "Progress was recorded from this Healthy Buck tool.";
+
+    const reminder =
+      snapshot.reminder ||
+      snapshot.status?.reminder ||
+      "Keep checking in and building steady progress.";
+
+    const nextStep =
+      snapshot.nextStep ||
+      snapshot.status?.nextStep ||
+      "Review this update before your next wellness check-in.";
+
+    return `
+      <div class="snapshot-summary">
+        <p><strong>Date:</strong> ${escapeHTML(formatDate(snapshot.date))}</p>
+        <p><strong>Tool:</strong> ${escapeHTML(readableToolName(snapshot.tool))}</p>
+        <p><strong>Progress note:</strong> ${escapeHTML(summary)}</p>
+        <p><strong>Helpful reminder:</strong> ${escapeHTML(reminder)}</p>
+        <p><strong>Suggested next step:</strong> ${escapeHTML(nextStep)}</p>
+      </div>
+    `;
+  }
+
   function buildReportHTML(data){
     return `
       <!doctype html>
       <html>
       <head>
-        <title>Healthy Buck Progress Export</title>
+        <title>Healthy Buck Wellness Progress</title>
         <style>
-          body{font-family:Arial,sans-serif;color:#111827;padding:32px;line-height:1.45}
-          h1,h2,h3{color:#0f766e}
+          body{font-family:Arial,sans-serif;color:#111827;padding:32px;line-height:1.5;background:#fff}
+          h1{color:#0f766e;margin-bottom:6px}
+          h2{color:#0f766e;margin-top:26px;border-bottom:1px solid #d1fae5;padding-bottom:6px}
+          h3{color:#134e4a;margin-bottom:8px}
+          .note{font-size:13px;color:#6b7280}
           .section{border-top:1px solid #e5e7eb;padding-top:16px;margin-top:20px}
-          .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin:8px 0}
+          .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin:10px 0}
+          .friendly-data{display:flex;flex-direction:column;gap:8px}
+          .friendly-row{padding:10px 12px;border-radius:10px;background:#fff;border:1px solid #dbe4ea}
+          .friendly-row strong{color:#134e4a}
+          .snapshot-summary{padding:12px;border-radius:12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.18)}
           pre{white-space:pre-wrap;word-break:break-word;font-family:Arial,sans-serif}
-          .note{font-size:12px;color:#6b7280}
+          @media print{body{padding:18px}.section,.box{break-inside:avoid}}
         </style>
       </head>
       <body>
-        <h1>Healthy Buck Progress Export</h1>
-        <p class="note">Generated locally from the user's browser. No cloud sync or API required.</p>
+        <h1>Your Healthy Buck Wellness Progress</h1>
+        <p class="note">This report summarizes your recent Healthy Buck activity, goals, reminders, progress updates, and personal notes.</p>
         <p><strong>Exported:</strong> ${formatDate(data.exportedAt)}</p>
 
         <div class="section">
           <h2>Current Status</h2>
-          <p><strong>Current phase:</strong> ${escapeHTML(data.status.currentPhase || "")}</p>
-          <p><strong>Next step:</strong> ${escapeHTML(data.status.nextStep || "")}</p>
+          <p><strong>Current phase:</strong> ${escapeHTML(data.status.currentPhase || "Not recorded yet")}</p>
+          <p><strong>Next step:</strong> ${escapeHTML(data.status.nextStep || "Continue tracking your progress in your Healthy Buck tools.")}</p>
           <p><strong>Last updated:</strong> ${escapeHTML(formatDate(data.status.lastUpdated))}</p>
         </div>
 
         ${data.notes ? `
           <div class="section">
-            <h2>User Notes</h2>
-            <pre>${escapeHTML(data.notes)}</pre>
+            <h2>Member Notes</h2>
+            <div class="box"><pre>${escapeHTML(data.notes)}</pre></div>
           </div>
         ` : ""}
 
@@ -583,36 +658,40 @@ body{
           ${data.activeGoals.length ? data.activeGoals.map(goal => `
             <div class="box">
               <strong>${escapeHTML(goal.goal || "Active goal")}</strong><br>
-              Source: ${escapeHTML(goal.source || "Tool update")}<br>
+              Source: ${escapeHTML(goal.source || "Healthy Buck update")}<br>
               Status: ${escapeHTML(goal.status || "active")}
             </div>
           `).join("") : "<p>No active goals exported.</p>"}
         </div>
 
         <div class="section">
-          <h2>Selected Tool Data</h2>
+          <h2>Selected Healthy Buck Tools</h2>
           ${Object.keys(data.tools).length ? Object.entries(data.tools).map(([toolName, toolData]) => `
             <div class="box">
               <h3>${escapeHTML(readableToolName(toolName))}</h3>
-              <pre>${escapeHTML(JSON.stringify(toolData.current || toolData, null, 2))}</pre>
+              ${renderFriendlyToolData(toolName, toolData)}
             </div>
           `).join("") : "<p>No tool data selected.</p>"}
         </div>
 
         <div class="section">
-          <h2>Last 3 Local Snapshots</h2>
+          <h2>Recent Progress Reminders</h2>
           ${data.snapshots.length ? data.snapshots.map(snapshot => `
-            <div class="box">
-              <strong>${escapeHTML(formatDate(snapshot.date))}</strong><br>
-              Tool: ${escapeHTML(readableToolName(snapshot.tool))}
-              <pre>${escapeHTML(JSON.stringify(snapshot.status, null, 2))}</pre>
-            </div>
-          `).join("") : "<p>No snapshots exported.</p>"}
+            <div class="box">${renderProgressSnapshot(snapshot)}</div>
+          `).join("") : "<p>No recent progress snapshots exported.</p>"}
         </div>
+
+        <div class="section">
+          <h2>Wellness Reminder</h2>
+          <div class="box">Small consistent progress matters more than perfection. Keep tracking your wellness habits and bring this report to your next health check-in if helpful.</div>
+        </div>
+
+        <p class="note">For personal tracking and appointment preparation only. This does not diagnose, treat, cure, or prevent disease.</p>
       </body>
       </html>
     `;
   }
+
 
   window.downloadHBPIReportPDF = function(){
     const includeTools = Array.from(document.querySelectorAll(".export-tool:checked")).map(input => input.value);
